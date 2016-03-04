@@ -7,5 +7,14 @@
 		{$profileActionToolbar}
 	{/if}
 
+	{if !empty($dashboardSwitchUrl)}
+	<form class="ow_form dashboard_switch">
+		<div class="ow_checkbox_group clearfix">
+			<input type="checkbox" name="dashboard_switch" id="dashboard_switch" onclick="new OW_FloatBox({}); window.location='{$dashboardSwitchUrl}'; return true;">
+			<label for="dashboard_switch">Show only my friends' activities</label>
+		</div>
+	</form>
+	{/if}
+
 	{$componentPanel}
 {/if}

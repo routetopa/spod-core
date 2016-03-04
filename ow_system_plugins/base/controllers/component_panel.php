@@ -187,7 +187,9 @@ class BASE_CTRL_ComponentPanel extends OW_ActionController
 
         $this->assign('isAdmin', OW::getUser()->isAdmin());
         $this->assign('isModerator', BOL_AuthorizationService::getInstance()->isModerator());
-        
+        $this->assign('dashboardSwitch', 'true');
+        $this->assign('dashboardSwitchUrl', OW::getRouter()->urlForRoute('base_index'));
+
         $this->setDocumentKey('base_user_dashboard');
     }
 
@@ -460,6 +462,8 @@ class BASE_CTRL_ComponentPanel extends OW_ActionController
 
         $sidebarPosition = OW::getThemeManager()->getCurrentTheme()->getDto()->getSidebarPosition();
         $componentPanel->setSidebarPosition($sidebarPosition);
+
+        $this->assign('dashboardSwitchUrl', OW::getRouter()->urlForRoute('base_member_dashboard'));
 
         $componentPanel->assign('adminPluginsUrl', OW::getRouter()->urlForRoute('admin_plugins_installed'));
 
