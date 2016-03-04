@@ -98,8 +98,8 @@ class BASE_CLASS_ConsoleEventHandler
                 $('#".$item->getUniqId()."').click(function(){new OW_FloatBox({ \$contents: $('#base_cmp_floatbox_ajax_signin')});});
             ");
 
-            $item = new BASE_CMP_ConsoleButton($language->text('base', 'console_item_sign_up_label'), OW::getRouter()->urlForRoute('base_join'));
-            $event->addItem($item, 1);
+            //$item = new BASE_CMP_ConsoleButton($language->text('base', 'console_item_sign_up_label'), OW::getRouter()->urlForRoute('base_join'));
+            //$event->addItem($item, 1);
         }
 
         $item = new BASE_CMP_ConsoleSwitchLanguage();
