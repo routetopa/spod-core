@@ -897,14 +897,22 @@ class OW_Application
 
     protected function urlHostRedirect()
     {
-        $urlArray = parse_url(OW_URL_HOME);
-        $constHost = $urlArray['host'];
+        $urlArray = parse_url ( OW_URL_HOME );
 
-        if ( isset($_SERVER['HTTP_HOST']) && ( $_SERVER['HTTP_HOST'] !== $constHost ) )
+        if ( isset ( $urlArray ['port']))
         {
-            $this->redirect(OW_URL_HOME . OW::getRequest()->getRequestUri());
+            $my_Host = ( $urlArray ['host']. ': '. $urlArray ['port']);
+        } else {
+            $my_Host = ( $urlArray ['host']);
+        }
+
+        if ( isset ( $_SERVER [' HTTP_HOST ']) && ( $_SERVER ['HTTP_HOST '] !== $my_Host ) )
+        {
+            $this -> redirect ( OW_URL_HOME . OW :: getRequest () ->
+            getRequestUri ());
         }
     }
+    
     /**
      * @var array 
      */
