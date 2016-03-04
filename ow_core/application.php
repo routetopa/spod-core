@@ -567,6 +567,14 @@ class OW_Application
             $document->setFavicon(OW::getPluginManager()->getPlugin('base')->getUserFilesUrl() . 'favicon.ico');
         }
 
+        // ISISLab ODE
+        try {
+            $document->addScript('http://deep.routetopa.eu/COMPONENTS/bower_components/webcomponentsjs/webcomponents-lite.js', 'text/javascript', (-100));
+        } catch (Exception $e) {
+
+        }
+        // END ISISLab ODE
+
         $document->addScript(OW::getPluginManager()->getPlugin('base')->getStaticJsUrl() . 'jquery.min.js',
             'text/javascript', (-100));
         $document->addScript(OW::getPluginManager()->getPlugin('base')->getStaticJsUrl() . 'jquery-migrate.min.js',
