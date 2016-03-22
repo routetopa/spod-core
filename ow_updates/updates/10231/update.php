@@ -21,25 +21,15 @@
  * Display of Attribution Information is required in Larger Works which are defined in the CPAL as a work
  * which combines Covered Code or portions thereof with code not governed by the terms of the CPAL.
  */
+$keysToDelete = array(
+    "mail_template_admin_invalid_license_subject",
+    "mail_template_admin_invalid_license_content_html",
+    "mail_template_admin_invalid_license_content_text"
+);
 
-/**
- * Billing action controller
- *
- * @author Egor Bulgakov <egor.bulgakov@gmail.com>
- * @package ow.ow_system_plugins.base.controllers
- * @since 1.0
- */
-class BASE_CTRL_Billing extends OW_ActionController
+foreach ( $keysToDelete as $key )
 {
-    use BASE_CLASS_BillingMethodsTrait;
-
-    /**
-     * Class constructor
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-
+    Updater::getLanguageService()->deleteLangKey("admin", $key);
 }
+
+Updater::getLanguageService()->importPrefixFromDir(__DIR__ . DS . "langs");

@@ -22,23 +22,23 @@
  * which combines Covered Code or portions thereof with code not governed by the terms of the CPAL.
  */
 
-$tblPrefix = OW_DB_PREFIX;
-$dbo = Updater::getDbo();
+$languageService = Updater::getLanguageService();
 
-$logger = Updater::getLogger();
+$languages = $languageService->getLanguages();
+$langId = null;
 
-$queries = array();
-
-$queries = "ALTER TABLE `{$tblPrefix}base_billing_sale` ADD `periodUnits` VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `extraData`;";
-
-foreach ( $queries as $query )
+foreach ($languages as $lang)
 {
-    try
+    if ($lang->tag == 'en')
     {
-        $dbo->query($query);
+        $langId = $lang->id;
+        break;
     }
-    catch (Exception $e)
-    {
-        $logger->addEntry(json_encode($e));
-    }
+}
+
+if ($langId !== null)
+{
+    $languageService->addOrUpdateValue($langId, 'base', 'delete_user_feedback', 'User has been deleted');
+    $languageService->addOrUpdateValue($langId, 'base', 'invalid_user', 'User doesn\'t exist');
+    $languageService->addOrUpdateValue($langId, 'base', 'moderation_user_update', 'Updated their profile. <a href="{$profileUrl}">View profile</a>');
 }

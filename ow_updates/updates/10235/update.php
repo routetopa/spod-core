@@ -22,24 +22,24 @@
  * which combines Covered Code or portions thereof with code not governed by the terms of the CPAL.
  */
 
-/**
- * Billing action controller
- *
- * @author Egor Bulgakov <egor.bulgakov@gmail.com>
- * @package ow.ow_system_plugins.base.controllers
- * @since 1.0
- */
-class BASE_CTRL_Billing extends OW_ActionController
+$tblPrefix = OW_DB_PREFIX;
+$dbo = Updater::getDbo();
+
+$logger = Updater::getLogger();
+
+$queries = array();
+
+
+$queries[] = "ALTER TABLE `{$tblPrefix}base_billing_sale` ADD `periodUnits` VARCHAR(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `extraData`;";
+
+foreach ( $queries as $query )
 {
-    use BASE_CLASS_BillingMethodsTrait;
-
-    /**
-     * Class constructor
-     */
-    public function __construct()
+    try
     {
-        parent::__construct();
+        $dbo->query($query);
     }
-
-
+    catch (Exception $e)
+    {
+        $logger->addEntry(json_encode($e));
+    }
 }
