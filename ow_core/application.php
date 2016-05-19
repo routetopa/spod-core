@@ -141,19 +141,7 @@ class OW_Application
             $uri = substr($uri, 0, strpos($uri, '?'));
         }
         $router->setUri($uri);
-
-        // ISISLab ODE
-        if ( !OW::getUser()->isAuthenticated()
-            && strpos($uri, "openwall") === FALSE 
-            && strpos($uri, "openid") === FALSE 
-            && strpos($uri, "sign-in") === FALSE 
-            && strpos($uri, "spodapi") === FALSE)
-        {
-            $this->redirect(OW::getRouter()->getBaseUrl() . "openwall");
-            return;
-        }
-        // END ISISLab ODE
-
+        
         $defaultRoute = new OW_DefaultRoute();
         //$defaultRoute->setControllerNamePrefix('CTRL');
         $router->setDefaultRoute($defaultRoute);
