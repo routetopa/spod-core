@@ -82,7 +82,6 @@ class ADMIN_CTRL_Users extends ADMIN_CTRL_Abstract
     public function index( array $params )
     {
         $language = OW::getLanguage();
-        $userService = BOL_UserService::getInstance();
         
         OW::getDocument()->getMasterPage()->getMenu(OW_Navigation::ADMIN_USERS)->getElement('sidebar_menu_item_users')->setActive(true);
 
@@ -205,7 +204,7 @@ class ADMIN_CTRL_Users extends ADMIN_CTRL_Abstract
                 break;
         }
         
-        $usersCmp = new ADMIN_CMP_UserList($par);
+        $usersCmp = OW::getClassInstance("ADMIN_CMP_UserList", $par);
         $this->addComponent('userList', $usersCmp);
 
         if ( !OW::getRequest()->isAjax() )

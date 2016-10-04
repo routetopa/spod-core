@@ -350,7 +350,7 @@ class BASE_CTRL_Edit extends OW_ActionController
                             BOL_AvatarService::getInstance()->deleteUserAvatar($userId);
                         }
                     }
-                    else
+                    elseif(isset($_POST['avatarUploaded']) && $_POST['avatarUploaded'] == 1)
                     {
                         // update user avatar
                         BOL_AvatarService::getInstance()->createAvatar($userId);

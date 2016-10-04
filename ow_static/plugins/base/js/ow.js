@@ -31,6 +31,10 @@ var OwUtils = function(){
         );
     }
 
+    this.escapeRegExp = function(s) {
+        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    }
+
     this.error = function( message ){
     	this.message(message, 'error');
     };
@@ -499,7 +503,7 @@ var OwUtils = function(){
 
         $.each(autoClicks, function(i,o){
             var context = $(o);
-            $('textarea.invitation', context)
+            $('textarea.invitation, textarea[placeholder]', context)
             .bind('focus.auto_click', {context:context},
                 function(e){
                     $('.ow_submit_auto_click', e.data.context).show();
@@ -1206,6 +1210,7 @@ var OwFormElement = function( id, name ){
     this.name = name;
     this.input = document.getElementById(id);
     this.validators = [];
+    this.filters = [];
 }
 
 OwFormElement.prototype = {
@@ -1216,8 +1221,11 @@ OwFormElement.prototype = {
         var errorMessage = '';
 
         try{
+
+            var data = this.filter(this.getValue());
+            
             for( var i = 0; i < this.validators.length; i++ ){
-                this.validators[i].validate(this.getValue());
+                this.validators[i].validate(data);
             }
         }catch (e) {
             error = true;
@@ -1233,9 +1241,21 @@ OwFormElement.prototype = {
     addValidator: function( validator ){
         this.validators.push(validator);
     },
+    
+    addFilter: function( filter ){
+        this.filters.push(filter);
+    },
 
     getValue: function(){
         return $(this.input).val();
+    },
+
+    filter: function( data ){
+        for( var i = 0; i < this.filters.length; i++ ){
+            data = this.filters[i].filter(data);
+        }
+        
+        return data;
     },
 
     setValue: function( value ){
@@ -1352,9 +1372,10 @@ OwForm.prototype = {
 
         $.each(this.elements,
             function( index, data ){
-                values[data.name] = data.getValue();
+                //check if filter method is available before using it
+                values[data.name] = $.isFunction(data.filter) ? data.filter(data.getValue()) : data.getValue();
             }
-            );
+        );
 
         return values;
     },
@@ -1377,7 +1398,7 @@ OwForm.prototype = {
             function( index, data ){
                 data.resetValue();
             }
-            );
+        );
     },
 
     removeErrors: function(){
@@ -3206,6 +3227,24 @@ OW_UsersApi = function( _settings )
         return _query("unfeature", {"userId": userId}, callback);
     };
 };
+
+OW.postRequest = function(url, params)
+{
+    var $form = $("<form></form>")
+        .attr({
+            action: url,
+            method: "post"
+        })
+        .appendTo("body");
+
+    $.each(params, function( name, value ) {
+        $('<input type="hidden" />').attr({
+            name: name, value: value
+        }).appendTo($form);
+    });
+
+    $form.submit();
+}
 
 OW.ResponsiveMenu = (function() {
     

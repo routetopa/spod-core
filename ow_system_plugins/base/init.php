@@ -52,6 +52,8 @@ $router->addRoute(new OW_Route('users', 'users', 'BASE_CTRL_UserList', 'index', 
 $router->addRoute(new OW_Route('base_user_lists', 'users/:list', 'BASE_CTRL_UserList', 'index'));
 
 $router->addRoute(new OW_Route('users-waiting-for-approval', 'users/waiting-for-approval', 'BASE_CTRL_UserList', 'forApproval'));
+$router->addRoute(new OW_Route('users-blocked', 'users/blocked', 'BASE_CTRL_UserList', 'blocked'));
+
 
 $router->addRoute(new OW_Route('users-search', 'users/search', 'BASE_CTRL_UserSearch', 'index'));
 $router->addRoute(new OW_Route('users-search-result', 'users/search-result', 'BASE_CTRL_UserSearch', 'result'));
@@ -110,6 +112,7 @@ $router->addRoute(new OW_Route('base_user_privacy_no_permission', 'profile/:user
 
 $router->addRoute(new OW_Route('base-api-server', 'api-server', 'BASE_CTRL_ApiServer', 'request'));
 $router->addRoute(new OW_Route('base.robots_txt', 'robots.txt', 'BASE_CTRL_Base', 'robotsTxt'));
+$router->addRoute(new OW_Route('base.sitemap', 'sitemap.xml', 'BASE_CTRL_Base', 'sitemap'));
 
 $router->addRoute(new OW_Route('base.complete_account_type', 'fill/account_type', 'BASE_CTRL_CompleteProfile', 'fillAccountType'));
 $router->addRoute(new OW_Route('base.complete_required_questions', 'fill/profile_questions', 'BASE_CTRL_CompleteProfile', 'fillRequiredQuestions'));

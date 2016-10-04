@@ -30,6 +30,11 @@
 class BASE_CTRL_UserList extends OW_ActionController
 {
     private $usersPerPage;
+    
+    /**
+     * @var BOL_SeoService
+     */
+    protected $seoService;
 
     public function __construct()
     {
@@ -37,13 +42,15 @@ class BASE_CTRL_UserList extends OW_ActionController
         OW::getNavigation()->activateMenuItem(OW_Navigation::MAIN, 'base', 'users_main_menu_item');
 
         $this->setPageHeading(OW::getLanguage()->text('base', 'users_browse_page_heading'));
-        $this->setPageTitle(OW::getLanguage()->text('base', 'users_browse_page_heading'));
         $this->setPageHeadingIconClass('ow_ic_user');
         $this->usersPerPage = (int)OW::getConfig()->getValue('base', 'users_count_on_page');
+        $this->seoService = BOL_SeoService::getInstance();
     }
 
     public function index( $params )
     {
+        $language = OW::getLanguage();
+
         $listType = empty($params['list']) ? 'latest' : strtolower(trim($params['list']));
         $this->addComponent('menu', self::getMenu($listType));
 
@@ -51,25 +58,61 @@ class BASE_CTRL_UserList extends OW_ActionController
         list($list, $itemCount) = $this->getData($listType, (($page - 1) * $this->usersPerPage), $this->usersPerPage);
 
         $cmp = OW::getClassInstance("BASE_Members", $list, $itemCount, $this->usersPerPage, true, $listType);
-        
+
         $this->addComponent('cmp', $cmp);
 
         $this->assign('listType', $listType);
 
-        $description = '';
-        try
-        {
-            $description = BOL_LanguageService::getInstance()->getText(BOL_LanguageService::getInstance()->getCurrent()->getId(), 'base', 'users_list_'.$listType.'_meta_description');
-        }
-        catch ( Exception $e )
-        {
+        $this->setMetaForListType(array("user_list" => $language->text("base", "user_list_type_".$listType)));
+    }
 
+    /**
+     * List on blocked users
+     *
+     * @throws AuthenticateException
+     */
+    public function blocked()
+    {
+        $userId = OW::getUser()->getId();
+
+        if ( !OW::getUser()->isAuthenticated() || $userId === null )
+        {
+            throw new AuthenticateException();
         }
 
-        if ( !empty($description) )
+        // unblock action
+        if ( OW::getRequest()->isPost() && !empty($_POST['userId']) )
         {
-            OW::getDocument()->setDescription($description);
+            BOL_UserService::getInstance()->unblock($_POST['userId']);
+
+            // reload the current page
+            OW::getFeedback()->info(OW::getLanguage()->text('base', 'user_feedback_profile_unblocked'));
+
+            $this->redirect();
         }
+
+        // process pagination params
+        $page = (!empty($_GET['page']) && intval($_GET['page']) > 0 ) ? $_GET['page'] : 1;
+        $perPage = $this->usersPerPage;
+        $first = ($page - 1) * $perPage;
+        $count = $perPage;
+
+        $service = BOL_UserService::getInstance();
+        $listCount = $service->countBlockedUsers($userId);
+
+        $blockedList = $listCount
+            ? $service->findBlockedUserList($userId, $first, $count)
+            : array();
+
+        $listCmp = new BASE_CMP_BlockedUserList(BOL_UserService::
+                getInstance()->findUserListByIdList($blockedList), $listCount, $perPage);
+
+        // init components
+        $this->addComponent('listCmp', $listCmp);
+
+        // set page settings
+        $this->setPageHeading(OW::getLanguage()->text('base', 'blocked_users_browse_page_heading'));
+        $this->setPageTitle(OW::getLanguage()->text('base', 'blocked_users_browse_page_heading'));
     }
 
     public function forApproval()
@@ -161,6 +204,19 @@ class BASE_CTRL_UserList extends OW_ActionController
         }
 
         return $menu;
+    }
+
+    protected function setMetaForListType( array $vars ){
+        $params = array(
+            "sectionKey" => "base.users",
+            "entityKey" => "userLists",
+            "title" => "base+meta_title_user_list",
+            "description" => "base+meta_desc_user_list",
+            "keywords" => "base+meta_keywords_user_list",
+            "vars" => $vars
+        );
+
+        OW::getEventManager()->trigger(new OW_Event("base.provide_page_meta_info", $params));
     }
 }
 

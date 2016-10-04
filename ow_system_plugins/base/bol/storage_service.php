@@ -99,7 +99,9 @@ class BOL_StorageService
     }
 
     /**
-     * Retrieves update information for all plugins and themes. Cron function.
+     * Retrieves update information for all plugins and themes.
+     *
+     * @return bool
      */
     public function checkUpdates()
     {
@@ -120,7 +122,7 @@ class BOL_StorageService
             );
         }
 
-        //check all manual updates before reading builds in DB 
+        //check all manual updates before reading builds in DB
         $this->themeService->checkManualUpdates();
         $themes = $this->themeService->findAllThemes();
 
@@ -143,12 +145,12 @@ class BOL_StorageService
         $params->addParams($data);
         $response = UTIL_HttpClient::post($this->getStorageUrl(self::URI_CHECK_ITEMS_FOR_UPDATE), $params);
 
-        if ( $response->getStatusCode() != UTIL_HttpClient::HTTP_STATUS_OK )
+        if ( !$response || $response->getStatusCode() != UTIL_HttpClient::HTTP_STATUS_OK )
         {
             OW::getLogger()->addEntry(__CLASS__ . "::" . __METHOD__ . "#" . __LINE__ . " storage request status is not OK",
                 "core.update");
 
-            return;
+            return false;
         }
 
         $resultArray = array();
@@ -163,7 +165,7 @@ class BOL_StorageService
             OW::getLogger()->addEntry(__CLASS__ . "::" . __METHOD__ . "#" . __LINE__ . " remote request returned empty result",
                 "core.update");
 
-            return;
+            return false;
         }
 
         if ( !empty($resultArray["update"]) )
@@ -182,11 +184,13 @@ class BOL_StorageService
         $items = !empty($resultArray["invalidLicense"]) ? $resultArray["invalidLicense"] : array();
 
         $this->updateItemsLicenseStatus($items);
+
+        return true;
     }
 
     /**
      * Returns information from remote storage for store item.
-     * 
+     *
      * @param string $key
      * @param string $devKey
      * @param int $currentBuild
@@ -208,7 +212,7 @@ class BOL_StorageService
 
     /**
      * Returns information from remote storage for platform.
-     * 
+     *
      * @return array
      */
     public function getPlatformInfoForUpdate()
@@ -220,15 +224,16 @@ class BOL_StorageService
 
     /**
      * Downloads platform update archive and puts it to the provided path.
-     * 
-     * @return string 
+     *
+     * @return string
      * @throws LogicException
      */
     public function downloadPlatform()
     {
         $params = array(
             "platform-version" => OW::getConfig()->getValue("base", "soft_version"),
-            "platform-build" => OW::getConfig()->getValue("base", "soft_build")
+            "platform-build" => OW::getConfig()->getValue("base", "soft_build"),
+            "site-url" => OW::getRouter()->getBaseUrl()
         );
 
         $data = array_merge($params, $this->triggerEventBeforeRequest($params));
@@ -239,7 +244,7 @@ class BOL_StorageService
         $paramsObj->addParams($data);
         $response = UTIL_HttpClient::get($this->getStorageUrl(self::URI_DOWNLOAD_PLATFORM_ARCHIVE), $paramsObj);
 
-        if ( $response->getStatusCode() != UTIL_HttpClient::HTTP_STATUS_OK || !$response->getBody() )
+        if ( !$response || $response->getStatusCode() != UTIL_HttpClient::HTTP_STATUS_OK || !$response->getBody() )
         {
             throw new LogicException("Can't download file. Server returned empty file.");
         }
@@ -253,7 +258,7 @@ class BOL_StorageService
 
     /**
      * Downloads item archive and returns it's local path.
-     * 
+     *
      * @param string $key
      * @param string $devKey
      * @param string $licenseKey
@@ -265,7 +270,8 @@ class BOL_StorageService
         $params = array(
             self::URI_VAR_KEY => trim($key),
             self::URI_VAR_DEV_KEY => trim($devKey),
-            self::URI_VAR_LICENSE_KEY => $licenseKey != null ? trim($licenseKey) : null
+            self::URI_VAR_LICENSE_KEY => $licenseKey != null ? trim($licenseKey) : null,
+            "site-url" => OW::getRouter()->getBaseUrl()
         );
 
         $data = array_merge($params, $this->triggerEventBeforeRequest($params));
@@ -274,7 +280,7 @@ class BOL_StorageService
         $paramsObj->addParams($data);
         $response = UTIL_HttpClient::get($this->getStorageUrl(self::URI_DOWNLOAD_ITEM), $paramsObj);
 
-        if ( $response->getStatusCode() != UTIL_HttpClient::HTTP_STATUS_OK || !$response->getBody() )
+        if ( !$response || $response->getStatusCode() != UTIL_HttpClient::HTTP_STATUS_OK || !$response->getBody() )
         {
             throw new LogicException("Can't download file. Server returned empty file.");
         }
@@ -288,7 +294,7 @@ class BOL_StorageService
 
     /**
      * Checks if license key is valid for store item.
-     * 
+     *
      * @param string $key
      * @param string $developerKey
      * @param string $licenseKey
@@ -320,7 +326,7 @@ class BOL_StorageService
 
     /**
      * Returns platform xml info.
-     * 
+     *
      * @return array
      */
     public function getPlatformXmlInfo()
@@ -391,7 +397,7 @@ class BOL_StorageService
 
     /**
      * Returns URL of local generic update script.
-     * 
+     *
      * @return string
      */
     public function getUpdaterUrl()
@@ -401,7 +407,7 @@ class BOL_StorageService
 
     /**
      * Returns the list of items with invalid license.
-     * 
+     *
      * @return type
      */
     public function findItemsWithInvalidLicense()
@@ -531,7 +537,14 @@ class BOL_StorageService
                 {
                     if ( $type == self::URI_VAR_ITEM_TYPE_VAL_THEME && $this->themeService->getSelectedThemeName() == $item->getKey() )
                     {
-                        $this->themeService->setSelectedThemeName(BOL_ThemeService::DEFAULT_THEME);
+                        $defaultTheme = OW::getEventManager()->call("base.get_default_theme");
+
+                        if( !$defaultTheme )
+                        {
+                            $defaultTheme = BOL_ThemeService::DEFAULT_THEME;
+                        }
+
+                        $this->themeService->setSelectedThemeName($defaultTheme);
                     }
                     else if ( $type == self::URI_VAR_ITEM_TYPE_VAL_PLUGIN && $item->isActive )
                     {
@@ -582,11 +595,12 @@ class BOL_StorageService
 
     private function requestGetResultAsJson( $url, $data )
     {
+        $data["site-url"] = OW::getRouter()->getBaseUrl();
         $params = new UTIL_HttpClientParams();
         $params->addParams($data);
         $response = UTIL_HttpClient::get($url, $params);
 
-        if ( $response->getStatusCode() != UTIL_HttpClient::HTTP_STATUS_OK || !$response->getBody() )
+        if ( !$response || $response->getStatusCode() != UTIL_HttpClient::HTTP_STATUS_OK || !$response->getBody() )
         {
             return null;
         }

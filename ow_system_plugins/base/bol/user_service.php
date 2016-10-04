@@ -47,8 +47,10 @@ final class BOL_UserService
     const USER_CONTEXT_DESKTOP = BOL_UserOnlineDao::CONTEXT_VAL_DESKTOP;
     const USER_CONTEXT_MOBILE = BOL_UserOnlineDao::CONTEXT_VAL_MOBILE;
     const USER_CONTEXT_API = BOL_UserOnlineDao::CONTEXT_VAL_API;
+    const USER_CONTEXT_CLI = BOL_UserOnlineDao::CONTEXT_VAL_CLI;
     const PASSWORD_RESET_CODE_EXPIRATION_TIME = 3600;
     const PASSWORD_RESET_CODE_UPDATE_TIME = 600;
+    const BEFORE_USER_ONLINE = 'base.before_user_online';
     
     const EVENT_USER_QUERY_FILTER = BOL_UserDao::EVENT_QUERY_FILTER;
 
@@ -316,6 +318,10 @@ final class BOL_UserService
         return $returnArray;
     }
 
+    /**
+     * @param string $username
+     * @return BOL_User
+     */
     public function findByUsername( $username )
     {
         return $this->userDao->findByUsername($username);
@@ -374,6 +380,18 @@ final class BOL_UserService
     public function findLoginCookieByUserId( $userId )
     {
         return $this->loginCookieDao->findByUserId($userId);
+    }
+
+    /**
+     * Find latest user ids list
+     *
+     * @param integer $offset
+     * @param integer $count
+     * @return array
+     */
+    public function findLatestUserIdsList( $offset, $count )
+    {
+        return $this->userDao->findLatestUserIdsList($offset, $count);
     }
 
     public function findList( $first, $count, $isAdmin = false )
@@ -598,6 +616,24 @@ final class BOL_UserService
         return !empty($dto);
     }
 
+    public function findBlockedUserList( $userId, $first, $count )
+    {
+        $list =  $this->userBlockDao->findBlockedUserList($userId, $first, $count);
+        $processedList = [];
+
+        foreach($list as $item)
+        {
+            $processedList[] = $item->getBlockedUserId();
+        }
+
+        return $processedList;
+    }
+
+    public function countBlockedUsers($userId)
+    {
+        return  $this->userBlockDao->countBlockedUsers($userId);
+    }
+
     public function isBlocked( $id, $byUserId = null )
     {
         if ( $byUserId === null )
@@ -698,7 +734,15 @@ final class BOL_UserService
 
         $userOnline->setActivityStamp($activityStamp);
         $userOnline->setContext($context);
-        $this->userOnlineDao->saveDelayed($userOnline);
+
+        $event = new OW_Event(self::BEFORE_USER_ONLINE, array('userId' => $userId, 'context' => $context), $userOnline);
+        OW_EventManager::getInstance()->trigger($event);
+        $data = $event->getData();
+
+        if ( $data instanceof BOL_UserOnline && !empty($data) )
+        {
+            $this->userOnlineDao->saveDelayed($data);
+        }
 
         /* @var $user BOL_User */
         $user->setActivityStamp($activityStamp);
@@ -876,6 +920,17 @@ final class BOL_UserService
         OW::getEventManager()->trigger($event);
     }
 
+    /**
+     * Get suspend reason
+     *
+     * @param integer $userId
+     * @return string
+     */
+    public function getSuspendReason( $userId )
+    {
+        return $this->userSuspendDao->getSuspendReason($userId);
+    }
+
     public function isSuspended( $userId )
     {
         return $this->userSuspendDao->findByUserId($userId) !== null;
@@ -907,7 +962,7 @@ final class BOL_UserService
         return $this->userDao->findListByEmailList($emailList);
     }
 
-    public function createUser( $username, $password, $email, $accountType = null, $emailVerify = false )
+    public function createUser( $username, $password, $email, $accountType = null, $emailVerify = false, $ip = null )
     {
         if ( !UTIL_Validator::isEmailValid($email) )
         {
@@ -955,7 +1010,7 @@ final class BOL_UserService
         $user->joinStamp = time();
         $user->activityStamp = time();
         $user->accountType = $userAccountType;
-        $user->joinIp = ip2long(OW::getRequest()->getRemoteAddress());
+        $user->joinIp = $ip ? $ip : ip2long(OW::getRequest()->getRemoteAddress());
 
         if ( $emailVerify === true )
         {
@@ -1357,7 +1412,7 @@ final class BOL_UserService
 
         $password = new PasswordField('password');
         $password->setHasInvitation(true);
-        $password->setInvitation('password');
+        $password->setInvitation(OW::getLanguage()->text('base', 'component_sign_in_password_invitation'));
         $password->setRequired(true);
         $form->addElement($password);
 

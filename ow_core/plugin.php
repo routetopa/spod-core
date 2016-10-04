@@ -113,6 +113,11 @@ class OW_Plugin
         return OW_DIR_PLUGIN_USERFILES . $this->getDirName() . DS;
     }
 
+    public function getInnerUserFilesDir()
+    {
+        return $this->getRootDir() . "userfiles" . DS;
+    }
+
     public function getUserFilesUrl()
     {
         return OW_URL_PLUGIN_USERFILES . $this->getDirName() . "/";
@@ -123,9 +128,19 @@ class OW_Plugin
         return OW_DIR_PLUGINFILES . $this->getDirName() . DS;
     }
 
+    public function getInnerPluginFilesDir()
+    {
+        return $this->getRootDir() . "pluginfiles" . DS;
+    }
+
     public function getRootDir()
     {
         return ($this->dto->isSystem() ? OW_DIR_SYSTEM_PLUGIN : OW_DIR_PLUGIN) . $this->getDirName() . DS;
+    }
+
+    public function getCliDir()
+    {
+        return $this->getRootDir() . "cli" . DS;
     }
 
     public function getMobileDir()

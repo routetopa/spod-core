@@ -25,6 +25,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\Handler\StreamHandler;
+use GuzzleHttp\RequestOptions;
 
 /**
  * @author Sardar Madumarov <madumarov@gmail.com>
@@ -34,7 +35,12 @@ use GuzzleHttp\Handler\StreamHandler;
 class UTIL_HttpClient
 {
     const HTTP_STATUS_OK = 200;
-    
+    const CONNECTION_TIMEOUT = 5;
+
+    /**
+     * @var GuzzleHttp\Client
+     */
+    private static $client;
 
     /**
      * @param string $url
@@ -43,12 +49,14 @@ class UTIL_HttpClient
      */
     public static function get( $url, UTIL_HttpClientParams $params = null )
     {
-        if ( $params && $params->getParams() )
+        $options = $params ? $params->getOptions() : array();
+
+        if ( !empty($options["params"]) )
         {
-            $url = OW::getRequest()->buildUrlQueryString($url, $params->getParams());
+            $options[RequestOptions::QUERY] = $options["params"];
         }
 
-        return self::request(file_get_contents($url), $http_response_header);
+        return self::request("GET", $url, $options);
     }
 
     /**
@@ -58,28 +66,48 @@ class UTIL_HttpClient
      */
     public static function post( $url, UTIL_HttpClientParams $params = null )
     {
-        $vars = array();
+        $options = $params ? $params->getOptions() : array();
 
-        if ( $params && $params->getParams() )
+        if ( !empty($options["params"]) )
         {
-            $vars = $params->getParams();
+            $options[RequestOptions::FORM_PARAMS] = $options["params"];
         }
 
-        $options = array(
-            "http" => array(
-                "header" => "Content-type: application/x-www-form-urlencoded\r\n",
-                "method" => "POST",
-                "content" => http_build_query($vars),
-            ),
-        );
-        $context = stream_context_create($options);
-
-
-        return self::request(file_get_contents($url, false, $context), $http_response_header);
+        return self::request("POST", $url, $options);
     }
-    
-    private static function request( $markup, $headers )
+    /* --------------------------------------------------------------------- */
+
+    private static function getClient()
     {
-        return new UTIL_HttpClientResponse($markup, $headers);
+        if ( self::$client == null )
+        {
+            $handler = function_exists("curl_version") ? new CurlHandler() : new StreamHandler();
+
+            self::$client = new Client(array(
+                "request.options" => array(
+                    "exceptions" => false,
+                ),
+                "handler" => HandlerStack::create($handler)
+            ));
+        }
+
+        return self::$client;
+    }
+
+    private static function request( $method, $url, array $options )
+    {
+        $options[RequestOptions::VERIFY] = false;
+        $options[RequestOptions::CONNECT_TIMEOUT] = self::CONNECTION_TIMEOUT;
+
+        try
+        {
+            $response = self::getClient()->request($method, $url, $options);
+        }
+        catch ( Exception $e )
+        {
+            return null;
+        }
+
+        return new UTIL_HttpClientResponse($response);
     }
 }

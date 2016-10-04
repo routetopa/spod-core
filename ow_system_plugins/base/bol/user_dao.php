@@ -208,6 +208,22 @@ class BOL_UserDao extends OW_BaseDao
         return $this->findObjectByExample($ex);
     }
 
+    /**
+     * Find latest user ids list
+     *
+     * @param integer $offset
+     * @param integer $count
+     * @return array
+     */
+    public function findLatestUserIdsList( $offset, $count )
+    {
+        $example = new OW_Example();
+        $example->setOrder('joinStamp DESC')
+            ->setLimitClause($offset, $count);
+
+        return $this->findIdListByExample($example);
+    }
+
     public function findList( $first, $count, $admin = false )
     {
         if ( $admin === true )
@@ -729,7 +745,7 @@ class BOL_UserDao extends OW_BaseDao
     }
 
     /**
-     * Returns user for provided username/email.
+     * Query for provided question values.
      *
      * @param array $questionValues
      * @param int $first
@@ -737,9 +753,9 @@ class BOL_UserDao extends OW_BaseDao
      * @param boolean $isAdmin
      * @param boolean $type
      *
-     * @return BOL_User
+     * @return String
      */
-    public function findUserIdListByQuestionValues( $questionValues, $first, $count, $isAdmin = false, $aditionalParams = array() )
+    public function findUserIdListByQuestionValuesQuery( $questionValues, $isAdmin = false, $aditionalParams = array() )
     {
         $questionNameList = array_keys($questionValues);
 
@@ -819,31 +835,48 @@ class BOL_UserDao extends OW_BaseDao
         }
 
         $usersTableName = "`{$this->getTableName()}`";
-        
+
         if ( !empty($aditionalParams["limit_users_count"]) && OW_SQL_LIMIT_USERS_COUNT > 0 )
         {
             $orderFieldname = self::ACTIVITY_STAMP;
             $usersTableName = "( SELECT * FROM {$usersTableName} ORDER BY `{$orderFieldname}` DESC LIMIT " . OW_SQL_LIMIT_USERS_COUNT . " )";
         }
-        
-        $query = "SELECT DISTINCT `user`.id, `user`.`activityStamp` FROM {$usersTableName} `user`
+
+        $distinct = !isset($aditionalParams["distinct"]) || $aditionalParams["distinct"] ? 'DISTINCT' : '';
+
+        $query = "SELECT $distinct `user`.id, `user`.`activityStamp` FROM {$usersTableName} `user`
                 {$innerJoin}
                 {$queryParts["join"]}
 
                 WHERE {$queryParts["where"]} {$where}
-                ORDER BY {$order}
-                LIMIT :first, :count ";
+                ORDER BY {$order}";
 
         if ( $isAdmin === true )
         {
-            $query = "SELECT DISTINCT `user`.id FROM {$usersTableName} `user`
+            $query = "SELECT $distinct `user`.id FROM {$usersTableName} `user`
             {$innerJoin}
                 WHERE 1 {$where}
-                ORDER BY {$order}
-                LIMIT :first, :count ";
+                ORDER BY {$order}";
         }
-        
-        return $this->dbo->queryForColumnList($query, array_merge(array('first' => $first, 'count' => $count)));
+
+        return $query;
+    }
+
+    /**
+     * Returns user for provided username/email.
+     *
+     * @param array $questionValues
+     * @param int $first
+     * @param int $count
+     * @param boolean $isAdmin
+     * @param boolean $type
+     *
+     * @return BOL_User
+     */
+    public function findUserIdListByQuestionValues( $questionValues, $first, $count, $isAdmin = false, $aditionalParams = array() )
+    {
+        $query = $this->findUserIdListByQuestionValuesQuery($questionValues,$isAdmin, $aditionalParams);
+        return $this->dbo->queryForColumnList($query . " LIMIT :first, :count ", array_merge(array('first' => $first, 'count' => $count)));
     }
 
     public function findSearchResultList( $listId, $first, $count )

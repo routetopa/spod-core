@@ -451,6 +451,39 @@ class OW_HtmlDocument extends OW_Document
     }
 
     /**
+     * Removes javascript file from document.
+     *
+     * @param string $url
+     * @return OW_HtmlDocument
+     */
+    public function removeScript( $url )
+    {
+        if ( !in_array($url, $this->javaScripts['added']) )
+        {
+            return $this;
+        }
+
+        $key = array_search($url, $this->javaScripts['added']);
+        unset($this->javaScripts['added'][$key]);
+
+        foreach ( $this->javaScripts['items'] as $priorityKey => $priority )
+        {
+            foreach ( $priority as $typeKey => $type )
+            {
+                foreach ( $type as $key => $item )
+                {
+                    if( $item == $url )
+                    {
+                        unset($this->javaScripts['items'][$priorityKey][$typeKey][$key]);
+                    }
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Adds head javascript code  to document.
      *
      * @param string $script
@@ -613,16 +646,6 @@ class OW_HtmlDocument extends OW_Document
         $this->addMetaInfo(self::META_CONTENT_TYPE, $this->getMime() . '; charset=' . $this->getCharset(), 'http-equiv');
         $this->addMetaInfo(self::META_CONTENT_LANGUAGE, $this->getLanguage(), 'http-equiv');
 
-        if ( $this->getKeywords() )
-        {
-            $this->addMetaInfo('keywords', $this->getKeywords());
-        }
-
-        if ( $this->getDescription() )
-        {
-            $this->addMetaInfo('description', $this->getDescription());
-        }
-
         $this->getMasterPage()->assign('content', $this->body);
         $this->getMasterPage()->assign('heading', $this->getHeading());
         $this->getMasterPage()->assign('heading_icon_class', $this->getHeadingIconClass());
@@ -635,6 +658,15 @@ class OW_HtmlDocument extends OW_Document
         $jsData = '';
 
         // META INFO
+        if ( $this->getDescription() )
+        {
+            $headData .= UTIL_HtmlTag::generateTag('meta', array("name" => "description", "content" => $this->getDescription())) . PHP_EOL;
+        }
+
+        if ( $this->getKeywords() )
+        {
+            $headData .= UTIL_HtmlTag::generateTag('meta', array("name" => "keywords", "content" => $this->getKeywords())) . PHP_EOL;
+        }
 
         foreach ( $this->meta as $key => $value )
         {

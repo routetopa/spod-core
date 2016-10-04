@@ -266,7 +266,7 @@ class ADMIN_CTRL_Languages extends ADMIN_CTRL_Abstract
                 $item_count = $languageService->countSearchResultKeys($language->getId(), $search);
             }
         }
-        elseif ( !empty($_GET['prefix']) )
+        else if ( !empty($_GET['prefix']) )
         {
             $prefix = $_GET['prefix'];
 
@@ -529,7 +529,6 @@ class ADMIN_CTRL_Languages extends ADMIN_CTRL_Abstract
 
     public function deleteKey()
     {
-
         $languageService = BOL_LanguageService::getInstance();
 
         $key = $_GET['key'];
@@ -537,8 +536,10 @@ class ADMIN_CTRL_Languages extends ADMIN_CTRL_Abstract
 
         $dto = $languageService->findKey($prefix, $key);
 
-        $languageService->deleteKey($dto->getId());
-        OW::getFeedback()->info('Deleted');
+        if ( !empty($dto) ) {
+            $languageService->deleteKey($dto->getId());
+            OW::getFeedback()->info('Deleted');
+        }
         $this->redirect($_SERVER['HTTP_REFERER']);
     }
 
@@ -1004,7 +1005,12 @@ class ADMIN_CTRL_Languages extends ADMIN_CTRL_Abstract
                 $languageService->save($dto);
             }
         }
-        $languageService->resetCurrentLanguage();
+
+
+
+        unset($_COOKIE[BOL_LanguageService::LANG_ID_VAR_NAME]);
+        OW::getSession()->delete(BOL_LanguageService::LANG_ID_VAR_NAME);
+        $this->service->setCurrentLanguage(BOL_LanguageDao::getInstance()->getCurrent());
         exit;
     }
 

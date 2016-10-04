@@ -3,8 +3,9 @@
         "vendor-dir": "ow_libraries/vendor"
     },
     "require": {
+        "guzzlehttp/guzzle": "~6.2",
         "smarty/smarty": "~3.1",
         "phpmailer/phpmailer": "~5.2",
-        "zendframework/zend-escaper": "^2.5"
+        "symfony/console": "~3.1"
     }
 }

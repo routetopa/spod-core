@@ -74,7 +74,7 @@ class BASE_CLASS_AvatarField extends FormElement
             $markup .= '<div class="ow_avatar_field_preview" style="display: block;"><img src="' . $this->value . '" alt="" /><span title="'.$deleteLabel.'"></span></div>';            
             $markup .= '<input type="hidden" id="' . $this->getId() . '_preload_avatar" name="avatarPreloaded" value="1" />';
         }
-
+        $markup .= '<input type="hidden" id="' . $this->getId() . '_update_avatar" name="avatarUploaded" value="0" />';
         $markup .= '<input type="hidden" name="' . $this->attributes['name'] . '" value="' . $this->value . '" class="ow_avatar_field_value" />';
         $markup .= '</div>';
 
@@ -89,11 +89,7 @@ class BASE_CLASS_AvatarField extends FormElement
         );
         $jsString = "var formElement = new OwAvatarField(" . json_encode($this->getId()) . ", " . json_encode($this->getName()) . ", ".json_encode($params).");";
 
-        /** @var $value OW_Validator  */
-        foreach ( $this->validators as $value )
-        {
-            $jsString .= "formElement.addValidator(" . $value->getJsValidator() . ");";
-        }
+        $jsString .= $this->generateValidatorAndFilterJsCode("formElement");
 
         $jsString .= "
 			formElement.getValue = function(){
@@ -105,10 +101,12 @@ class BASE_CLASS_AvatarField extends FormElement
 
 			formElement.resetValue = function(){
                 $(this.input).closest('.ow_avatar_field').find('.ow_avatar_field_value').val('');
+                $(this.input).closest('.ow_avatar_field').find('input[name^=\'avatarUploaded\']').val(0);
             };
 
 			formElement.setValue = function(value){
 			    $(this.input).closest('.ow_avatar_field').find('.ow_avatar_field_value').val(value);
+			    $(this.input).closest('.ow_avatar_field').find('input[name^=\'avatarUploaded\']').val(1);
 			};
 		";
 

@@ -27,35 +27,16 @@
  *
  * @author Sardar Madumarov <madumarov@gmail.com>
  * @package ow_core
+ * @method static OW_ApiApplication getInstance()
  * @since 1.0
  */
 class OW_ApiApplication extends OW_Application
 {
+    use OW_Singleton;
 
     private function __construct()
     {
         $this->context = self::CONTEXT_API;
-    }
-    /**
-     * Singleton instance.
-     *
-     * @var OW_ApiApplication
-     */
-    private static $classInstance;
-
-    /**
-     * Returns an instance of class (singleton pattern implementation).
-     *
-     * @return OW_ApiApplication
-     */
-    public static function getInstance()
-    {
-        if ( self::$classInstance === null )
-        {
-            self::$classInstance = new self();
-        }
-
-        return self::$classInstance;
     }
 
     /**
@@ -68,17 +49,44 @@ class OW_ApiApplication extends OW_Application
 
         $authToken = empty($_SERVER["HTTP_API_AUTH_TOKEN"]) ? null : $_SERVER["HTTP_API_AUTH_TOKEN"];
         OW_Auth::getInstance()->setAuthenticator(new OW_TokenAuthenticator($authToken));
-        
+
+        $tag = '';
+
         if ( !empty($_SERVER["HTTP_API_LANGUAGE"]) )
         {
-            $languageDto = BOL_LanguageService::getInstance()->findByTag($_SERVER["HTTP_API_LANGUAGE"]);
-            
+            $tag = $_SERVER["HTTP_API_LANGUAGE"];
+        }
+        else
+        {
+            if( function_exists('apache_request_headers') )
+            {
+                $headers = apache_request_headers();
+
+                if ( !empty($headers) && !empty($headers['api-language']) )
+                {
+                    $tag = trim($headers['api-language']);
+                }
+            }
+        }
+
+        if ( $tag )
+        {
+            $languageDto = BOL_LanguageService::getInstance()->findByTag($tag);
+
+            if ( empty($languageDto) )
+            {
+                $tag = mb_substr($tag, 0, 2);
+                $languageDto = BOL_LanguageService::getInstance()->findByTag($tag);
+            }
+
             if ( !empty($languageDto) && $languageDto->status == "active" )
             {
                 BOL_LanguageService::getInstance()->setCurrentLanguage($languageDto);
             }
         }
-        
+
+        //$this->detectLanguage();
+
         // setting default time zone
         date_default_timezone_set(OW::getConfig()->getValue('base', 'site_timezone'));
 

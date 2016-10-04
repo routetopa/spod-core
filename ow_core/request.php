@@ -25,10 +25,13 @@
 /**
  * @author Sardar Madumarov <madumarov@gmail.com>
  * @package ow_core
+ * @method static OW_Request getInstance()
  * @since 1.0
  */
-final class OW_Request
+class OW_Request
 {
+    use OW_Singleton;
+    
     /**
      * Request uri.
      *
@@ -36,28 +39,6 @@ final class OW_Request
      */
     private $uri;
     private $uriParams;
-
-    /**
-     * Singleton instance.
-     *
-     * @var OW_Request
-     */
-    private static $classInstance;
-
-    /**
-     * Returns an instance of class (singleton pattern implementation).
-     *
-     * @return OW_Request
-     */
-    public static function getInstance()
-    {
-        if ( self::$classInstance === null )
-        {
-            self::$classInstance = new self();
-        }
-
-        return self::$classInstance;
-    }
 
     /**
      * Constructor.
@@ -240,6 +221,10 @@ final class OW_Request
         else if ( array_key_exists("REQUEST_SCHEME", $_SERVER) )
         {
             $isHttps = (strtolower($_SERVER["REQUEST_SCHEME"]) == "https");
+        }
+        else if ( array_key_exists("HTTP_X_FORWARDED_PROTO", $_SERVER) )
+        {
+            $isHttps = ($_SERVER["HTTP_X_FORWARDED_PROTO"] == "https");
         }
         else if ( array_key_exists("SERVER_PORT", $_SERVER) )
         {

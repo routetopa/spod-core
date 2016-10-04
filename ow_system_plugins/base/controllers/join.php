@@ -117,26 +117,18 @@ class BASE_CTRL_Join extends OW_ActionController
         $jsDir = OW::getPluginManager()->getPlugin("base")->getStaticJsUrl();
         OW::getDocument()->addScript($jsDir . "base_field_validators.js");
 
-        $joinConnectHook = OW::getRegistry()->getArray(self::JOIN_CONNECT_HOOK);
-
-        if ( !empty($joinConnectHook) )
-        {
-            $content = array();
-
-            foreach ( $joinConnectHook as $function )
-            {
-                $result = call_user_func($function);
-
-                if ( trim($result) )
-                {
-                    $content[] = $result;
-                }
-            }
-
-            $this->assign('joinConnectHook', $content);
-        }
-
         $this->setDocumentKey('base_user_join');
+
+        // set meta info
+        $params = array(
+            "sectionKey" => "base.base_pages",
+            "entityKey" => "join",
+            "title" => "base+meta_title_join",
+            "description" => "base+meta_desc_join",
+            "keywords" => "base+meta_keywords_join"
+        );
+
+        OW::getEventManager()->trigger(new OW_Event("base.provide_page_meta_info", $params));
     }
 
     public function joinFormSubmit( $params )
@@ -304,9 +296,12 @@ class BASE_CTRL_Join extends OW_ActionController
 
                 // authenticate user
                 OW::getUser()->login($user->id);
-                
-                // create Avatar
-                $this->createAvatar($user->id);
+
+                if(isset($_POST['avatarUploaded']) && $_POST['avatarUploaded'] == 1)
+                {
+                    // create Avatar
+                    $this->createAvatar($user->id);
+                }
                 
                 $event = new OW_Event(OW_EventManager::ON_USER_REGISTER, array('userId' => $user->id, 'method' => 'native', 'params' => $params));
                 OW::getEventManager()->trigger($event);
@@ -426,17 +421,7 @@ class JoinForm extends BASE_CLASS_UserQuestionForm
         $joinSubmit->setValue($joinSubmitLabel);
         $this->addElement($joinSubmit);
 
-        if ( $this->displayAccountType )
-        {
-            $joinAccountType = new Selectbox('accountType');
-            $joinAccountType->setLabel(OW::getLanguage()->text('base', 'questions_question_account_type_label'));
-            $joinAccountType->setRequired();
-            $joinAccountType->setOptions($accounts);
-            $joinAccountType->setValue($this->accountType);
-            $joinAccountType->setHasInvitation(false);
-
-            $this->addElement($joinAccountType);
-        }
+        $this->init($accounts);
 
         $this->getQuestions();
 
@@ -481,7 +466,22 @@ class JoinForm extends BASE_CLASS_UserQuestionForm
         $controller->assign('isLastStep', $this->isLastStep);
     }
 
-    public function checkSession()
+    protected function init( array $accounts )
+    {
+        if ( $this->displayAccountType )
+        {
+            $joinAccountType = new Selectbox('accountType');
+            $joinAccountType->setLabel(OW::getLanguage()->text('base', 'questions_question_account_type_label'));
+            $joinAccountType->setRequired();
+            $joinAccountType->setOptions($accounts);
+            $joinAccountType->setValue($this->accountType);
+            $joinAccountType->setHasInvitation(false);
+
+            $this->addElement($joinAccountType);
+        }
+    }
+
+        public function checkSession()
     {
         $stamp = BOL_QuestionService::getInstance()->getQuestionsEditStamp();
         $sessionStamp = OW::getSession()->get(self::SESSION_START_STAMP);
