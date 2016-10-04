@@ -1,11 +1,20 @@
 CONTENTS OF THIS FILE
 ====================
 
+ * About SPOD
  * About Oxwall
  * Copyright
  * Installation and Configuration
  * Appearance
  * Oxwall Store
+
+ABOUT SPOD
+==========
+The Social Platform for Open Data (SPOD) enables social interactions among citizens around open datasets coming from different dataset providers.
+
+SPOD is based on Oxwall. This repository is a fork from the official Oxwall core.
+
+Please refer to https://github.com/routetopa/spod for information on SPOD and the ROUTE-TO-PA Project.
 
 ABOUT OXWALL
 ============
